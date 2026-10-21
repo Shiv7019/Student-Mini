@@ -1,0 +1,21 @@
+
+.env
+.env.*
+!.env.example
+
+# Temporary password testing
+test-admin-password.php
+
+# Database exports and backups
+*.sql
+*.sql.zip
+*.bak
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Editor and operating system files
+.vscode/
+Thumbs.db
+.DS_Store
