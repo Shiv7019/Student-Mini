@@ -79,15 +79,15 @@
     <form id="registerForm">
         <label for="full_name">Full Name</label>
         <input type="text" id="full_name" name="full_name"
-               required maxlength="100">
+               required maxlength="100" autocomplete="name">
 
         <label for="email">Email Address</label>
         <input type="email" id="email" name="email"
-               required maxlength="150">
+               required maxlength="150" autocomplete="email">
 
         <label for="mobile">Mobile Number</label>
         <input type="tel" id="mobile" name="mobile"
-               required maxlength="20">
+               required maxlength="20" autocomplete="tel">
 
         <label for="password">Password</label>
         <input type="password" id="password" name="password"
@@ -106,6 +106,11 @@ const form = document.getElementById('registerForm');
 const message = document.getElementById('message');
 const submitBtn = document.getElementById('submitBtn');
 
+function showMessage(text, success = false) {
+    message.textContent = text;
+    message.style.color = success ? 'green' : 'red';
+}
+
 form.addEventListener('submit', async function (event) {
     event.preventDefault();
 
@@ -121,28 +126,70 @@ form.addEventListener('submit', async function (event) {
     message.textContent = '';
 
     try {
-        const response = await fetch('api/register.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
+        // Step 1: Request a CSRF token from the central API.
+        const csrfResponse = await fetch(
+            'api/index.php?route=csrf',
+            {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }
+        );
+
+        const csrfResult = await csrfResponse.json();
+
+        if (
+            !csrfResponse.ok ||
+            !csrfResult.success ||
+            !csrfResult.data ||
+            !csrfResult.data.csrf_token
+        ) {
+            throw new Error(
+                csrfResult.message || 'Could not obtain security token.'
+            );
+        }
+
+        // Step 2: Submit registration to the central API.
+        const response = await fetch(
+            'api/index.php?route=register',
+            {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-Token': csrfResult.data.csrf_token
+                },
+                body: JSON.stringify(data)
+            }
+        );
 
         const result = await response.json();
 
-        message.textContent = result.message ||
-            'An unexpected response was received.';
-        message.style.color = result.success ? 'green' : 'red';
-
-        if (result.success) {
-            form.reset();
-            message.textContent += ' Student ID: ' + result.student_id;
+        if (!response.ok || !result.success) {
+            showMessage(
+                result.message || 'Registration failed. Please try again.'
+            );
+            return;
         }
+
+        form.reset();
+
+        const studentId = result.data?.student_id;
+
+        showMessage(
+            (result.message || 'Student registered successfully.') +
+            (studentId ? ' Student ID: ' + studentId : ''),
+            true
+        );
+
     } catch (error) {
-        message.style.color = 'red';
-        message.textContent =
-            'Could not connect to the API. Check XAMPP Apache and your PHP files.';
+        showMessage(
+            error.message ||
+            'Could not connect to the API. Check XAMPP Apache and PHP.'
+        );
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Register Student';
