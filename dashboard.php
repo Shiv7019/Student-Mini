@@ -379,33 +379,19 @@ $studentAdded = isset($_GET['student_added']) && $_GET['student_added'] === '1';
 (() => {
     'use strict';
 
-    const API_URL = 'api/index.php';
-    const $ = (id) => document.getElementById(id);
+    const API_BASE = 'api/';
 
-    let currentPage = 1;
-    let totalPages = 1;
-    let registrationChart = null;
+    async function apiGet(endpoint, params = {}) {
+        const url = new URL(API_BASE + endpoint, window.location.href);
 
-    function showError(message) {
-        $('apiErrorText').textContent = message;
-        $('apiError').classList.remove('d-none');
-    }
-
-    function hideError() {
-        $('apiError').classList.add('d-none');
-    }
-
-    async function apiGet(route, page = null) {
-        let url = `${API_URL}?route=${encodeURIComponent(route)}`;
-
-        if (page !== null) {
-            url += `&page=${encodeURIComponent(page)}`;
+        for (const [key, value] of Object.entries(params)) {
+            url.searchParams.set(key, value);
         }
 
         const response = await fetch(url, {
             method: 'GET',
             credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' }
+            headers: { 'Accept': 'application/json' },
         });
 
         let result;
@@ -423,13 +409,29 @@ $studentAdded = isset($_GET['student_added']) && $_GET['student_added'] === '1';
         return result.data;
     }
 
+    const $ = (id) => document.getElementById(id);
+
+    let currentPage = 1;
+    let totalPages = 1;
+    let registrationChart = null;
+
+    function showError(message) {
+        $('apiErrorText').textContent = message;
+        $('apiError').classList.remove('d-none');
+    }
+
+    function hideError() {
+        $('apiError').classList.add('d-none');
+    }
+
+
     function formatNumber(value) {
         const number = Number(value);
         return Number.isFinite(number) ? number.toLocaleString('en-IN') : '0';
     }
 
     async function loadDashboard() {
-        const data = await apiGet('dashboard');
+        const data = await apiGet('dashboard.php');
 
         $('totalStudents').textContent = formatNumber(data.total_students);
         $('todayStudents').textContent = formatNumber(data.today_students);
@@ -565,7 +567,7 @@ $studentAdded = isset($_GET['student_added']) && $_GET['student_added'] === '1';
                 Loading students…
             </td></tr>`;
 
-        const data = await apiGet('students', page);
+        const data = await apiGet('students.php', { page });
         const students = Array.isArray(data.students) ? data.students : [];
         const pagination = data.pagination || {};
 

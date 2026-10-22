@@ -1,5 +1,13 @@
-
 <?php
+// api/_bootstrap.php
+// Shared setup for every endpoint file in api/.
+// Not directly reachable — guarded below.
+
+// If someone hits _bootstrap.php directly in the browser, 404.
+if (realpath($_SERVER['SCRIPT_FILENAME']) === realpath(__FILE__)) {
+    http_response_code(404);
+    exit('Not found.');
+}
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
@@ -21,7 +29,7 @@ function apiResponse(
         [
             'success' => $success,
             'message' => $message,
-            'data' => $data
+            'data'    => $data,
         ],
         JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
     );
@@ -38,7 +46,7 @@ function requireAdmin(): void
 
 function getJsonInput(): array
 {
-    $raw = file_get_contents('php://input');
+    $raw   = file_get_contents('php://input');
     $input = json_decode($raw, true);
 
     if (!is_array($input)) {
@@ -50,7 +58,7 @@ function getJsonInput(): array
 
 function requireCsrfToken(): void
 {
-    $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    $token        = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     $sessionToken = $_SESSION['api_csrf'] ?? '';
 
     if (

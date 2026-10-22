@@ -116,7 +116,7 @@ loginForm.addEventListener('submit', async function (event) {
     try {
         // 1. Request a CSRF token from the central API.
         const csrfResponse = await fetch(
-            'api/index.php?route=csrf',
+            'api/csrf.php',
             {
                 method: 'GET',
                 credentials: 'same-origin',
@@ -141,7 +141,7 @@ loginForm.addEventListener('submit', async function (event) {
 
         // 2. Submit login credentials to the central API.
         const response = await fetch(
-            'api/index.php?route=login',
+            'api/login.php',
             {
                 method: 'POST',
                 credentials: 'same-origin',
